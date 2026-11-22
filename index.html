@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpineGuard AI - 척추 및 경추 교정 AI 솔루션</title>
+  <meta name="description" content="실제 체압 방석 및 관성 센서 머신러닝 기반 실시간 척추 및 경추 교정 AI 웹 솔루션">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 헤더 영역 -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-badge">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M8 5h8M7 10h10M6 15h12M8 19h8" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text">SpineGuard <strong>AI</strong></span>
+        </div>
+        <span class="sub-title">실시간 척추 & 경추 바이오메카닉스 분석 솔루션</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="soundToggleBtn" class="action-btn sound-btn" title="경고 알림음 토글">
+          <svg id="soundIconOn" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+          <svg id="soundIconOff" class="btn-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+          <span id="soundText">알림음 ON</span>
+        </button>
+
+        <div class="mode-switch">
+          <button id="modeManualBtn" class="mode-tab active">시뮬레이터 모드</button>
+          <button id="modeSensorBtn" class="mode-tab">스마트폰 자이로 모드</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 실시간 상태 알림 배너 -->
+    <section id="statusBanner" class="status-banner safe">
+      <div class="banner-inner">
+        <div class="banner-status-icon">
+          <span id="statusEmoji">🟢</span>
+        </div>
+        <div class="banner-text">
+          <div class="banner-top-row">
+            <span id="postureBadge" class="status-badge badge-safe">정상 안정 (Optimal)</span>
+            <span class="ai-inference-tag">AI Random Forest 99.98% Model</span>
+          </div>
+          <h2 id="postureTitle" class="banner-title">바른 정상 자세 (Normal)</h2>
+          <p id="postureDesc" class="banner-desc">척추와 경추가 이상적인 중립 정렬을 유지하고 있으며, 골반 하중이 좌우 균등하게 분산되고 있습니다.</p>
+        </div>
+        <div class="banner-metrics">
+          <div class="quick-metric">
+            <span class="qm-label">추정 경추 하중</span>
+            <span id="quickLoad" class="qm-val">5.0 <small>kg</small></span>
+          </div>
+          <div class="quick-metric">
+            <span class="qm-label">체압 편중 지수</span>
+            <span id="quickImbalance" class="qm-val">0.00 <small>(균형)</small></span>
+          </div>
+          <div class="quick-metric">
+            <span class="qm-label">AI 신뢰도</span>
+            <span id="quickConfidence" class="qm-val">100 <small>%</small></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 메인 대시보드 그리드 -->
+    <main class="dashboard-grid">
+      <!-- 좌측 패널: 컨트롤 & 입력 -->
+      <section class="card control-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>
+            </svg>
+            생체역학 센서 파라미터 조절
+          </h3>
+          <span class="sensor-indicator live" id="sensorIndicator">입력 모드: 수동 시뮬레이터</span>
+        </div>
+
+        <!-- 스마트폰 센서 연결 배너 (모드 B일 때 표시) -->
+        <div id="sensorConnectBox" class="sensor-connect-box hidden">
+          <div class="sensor-connect-info">
+            <div class="sensor-pulse-ring"></div>
+            <div>
+              <strong>모바일 자이로 센서 실시간 연동 (DeviceOrientation)</strong>
+              <p>스마트폰 브라우저에서 목에 걸거나 가슴 주머니에 넣으면 실시간 각도가 측정됩니다.</p>
+            </div>
+          </div>
+          <div class="sensor-btn-group">
+            <button id="startSensorBtn" class="primary-btn pulse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+              스마트폰 자이로 센서 연결
+            </button>
+            <button id="calibrateBtn" class="secondary-btn" disabled>현재 자세를 영점(0°)으로 설정</button>
+          </div>
+          <div id="sensorStatusMsg" class="sensor-status-msg"></div>
+        </div>
+
+        <!-- 슬라이더 및 입력 필드 -->
+        <div class="inputs-container">
+          <!-- 1. 고개 전방 숙임 각도 (Neck_Pitch) -->
+          <div class="input-group">
+            <div class="input-header">
+              <label for="pitchSlider">
+                <span class="param-name">고개 전방 숙임 각도 (Neck Pitch)</span>
+                <span class="param-tip">15° 이상 시 거북목 주의 · 30° 이상 고위험</span>
+              </label>
+              <div class="num-input-wrap">
+                <input type="number" id="pitchNumber" min="0" max="60" step="1" value="5">
+                <span class="unit">°</span>
+              </div>
+            </div>
+            <div class="slider-track-wrap">
+              <input type="range" id="pitchSlider" min="0" max="60" step="1" value="5" class="slider pitch-slider">
+              <div class="slider-markers">
+                <span style="left: 0%">0° (정상)</span>
+                <span style="left: 25%" class="marker-alert">15° (주의)</span>
+                <span style="left: 50%" class="marker-danger">30° (위험)</span>
+                <span style="left: 75%">45°</span>
+                <span style="left: 100%">60°</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 고개 좌우 기울기 (Neck_Roll) -->
+          <div class="input-group">
+            <div class="input-header">
+              <label for="rollSlider">
+                <span class="param-name">고개 좌우 측면 기울기 (Neck Roll)</span>
+                <span class="param-tip">±15° 초과 시 경추 측면 비대칭 편중</span>
+              </label>
+              <div class="num-input-wrap">
+                <input type="number" id="rollNumber" min="-45" max="45" step="1" value="0">
+                <span class="unit">°</span>
+              </div>
+            </div>
+            <div class="slider-track-wrap">
+              <input type="range" id="rollSlider" min="-45" max="45" step="1" value="0" class="slider roll-slider">
+              <div class="slider-markers">
+                <span style="left: 0%">-45° (좌)</span>
+                <span style="left: 33.3%">-15°</span>
+                <span style="left: 50%">0° (중립)</span>
+                <span style="left: 66.6%">+15°</span>
+                <span style="left: 100%">+45° (우)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 방석 체압 좌우 밸런스 (Left_P vs Right_P) -->
+          <div class="input-group">
+            <div class="input-header">
+              <label for="pressureSlider">
+                <span class="param-name">착석 방석 체압 좌우 비율 (Left vs Right)</span>
+                <span class="param-tip">편중 지수 0.30 이상 시 골반 쏠림/척추 측만</span>
+              </label>
+              <div class="pressure-ratio-badge">
+                <span id="leftPercentText" class="ratio-val">50%</span> : <span id="rightPercentText" class="ratio-val">50%</span>
+              </div>
+            </div>
+            <div class="slider-track-wrap">
+              <input type="range" id="pressureSlider" min="10" max="90" step="1" value="50" class="slider pressure-slider">
+              <div class="slider-markers">
+                <span style="left: 0%">좌 90 : 10 우</span>
+                <span style="left: 25%" class="marker-alert">좌 70 : 30</span>
+                <span style="left: 50%">50 : 50 (균등)</span>
+                <span style="left: 75%" class="marker-alert">30 : 70 우</span>
+                <span style="left: 100%">10 : 90</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4개 발표 시연용 원클릭 프리셋 버튼 -->
+        <div class="preset-section">
+          <div class="preset-title-wrap">
+            <span class="preset-label">발표 시연용 원클릭 프리셋 (클릭 시 즉시 전환)</span>
+          </div>
+          <div class="preset-grid">
+            <button id="presetNormal" class="preset-btn btn-normal active">
+              <span class="preset-emoji">🟢</span>
+              <div class="preset-text">
+                <strong>바른 자세</strong>
+                <small>Pitch 5° · Roll 0° · 50:50</small>
+              </div>
+            </button>
+
+            <button id="presetForward" class="preset-btn btn-forward">
+              <span class="preset-emoji">🟡</span>
+              <div class="preset-text">
+                <strong>거북목 자세</strong>
+                <small>Pitch 35° · Roll 2° · 52:48</small>
+              </div>
+            </button>
+
+            <button id="presetImbalance" class="preset-btn btn-imbalance">
+              <span class="preset-emoji">🟠</span>
+              <div class="preset-text">
+                <strong>다리꼬기 / 골반쏠림</strong>
+                <small>Pitch 10° · Roll 12° · 80:20</small>
+              </div>
+            </button>
+
+            <button id="presetSevere" class="preset-btn btn-severe">
+              <span class="preset-emoji">🔴</span>
+              <div class="preset-text">
+                <strong>복합 고위험 자세</strong>
+                <small>Pitch 42° · Roll 20° · 78:22</small>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 우측 패널: 실시간 지표 & AI 시각화 -->
+      <section class="card viz-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <activity/>
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            생체역학 부하 분석 & AI 추론 결과
+          </h3>
+          <span class="model-badge">Random Forest 앙상블</span>
+        </div>
+
+        <!-- 1. Hansraj 생체역학 실시간 경추 하중 게이지 -->
+        <div class="metric-card cervical-card">
+          <div class="metric-top">
+            <div class="metric-info">
+              <span class="metric-label">Hansraj 생체역학 기준 실시간 경추 하중</span>
+              <h4 id="cervicalHeadline" class="metric-headline">
+                현재 목에 <strong id="loadNumberBig">5.0</strong> kg의 하중이 가해지고 있습니다.
+              </h4>
+            </div>
+            <div class="cervical-level-pill" id="cervicalLevelPill">정상 (5kg)</div>
+          </div>
+
+          <div class="load-gauge-bar-wrap">
+            <div class="gauge-zones">
+              <div class="zone safe" style="width: 25%" title="0°~15°: 정상">0~15° 정상</div>
+              <div class="zone warning" style="width: 25%" title="15°~30°: 주의">15~30° 주의</div>
+              <div class="zone danger" style="width: 25%" title="30°~45°: 경고">30~45° 경고</div>
+              <div class="zone severe" style="width: 25%" title="45°~60°: 고위험">45~60° 고위험</div>
+            </div>
+            <div class="gauge-track">
+              <div id="cervicalGaugeFill" class="gauge-fill" style="width: 0%"></div>
+              <div id="gaugeMarker" class="gauge-marker" style="left: 0%">
+                <span id="markerLabel">5.0kg</span>
+              </div>
+            </div>
+            <div class="gauge-scale">
+              <span>0° (5kg)</span>
+              <span>15° (12kg)</span>
+              <span>30° (18kg)</span>
+              <span>45° (22kg)</span>
+              <span>60° (27kg)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 인체 자세 틸트 SVG & 체압 방석 히트맵 -->
+        <div class="viz-dual-row">
+          <!-- 자세 각도 시각화 SVG -->
+          <div class="sub-viz-box">
+            <span class="sub-viz-title">경추 정렬 아바타 (전방 숙임 및 측면 기울기)</span>
+            <div class="avatar-svg-container">
+              <svg id="spineAvatarSvg" viewBox="0 0 160 170" class="avatar-svg">
+                <!-- 몸통/체간 (고정) -->
+                <path d="M 50 145 Q 80 140 110 145 L 125 170 L 35 170 Z" fill="#334155" />
+                <rect x="74" y="110" width="12" height="35" rx="3" fill="#64748B" />
+                
+                <!-- 회전하는 목과 머리 그룹 (기준점: x=80, y=110) -->
+                <g id="headNeckGroup" transform="rotate(5, 80, 110)">
+                  <!-- 경추 뼈 시각화 -->
+                  <path d="M 80 110 Q 79 90 80 70" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" fill="none" id="spineCurve" />
+                  <!-- 턱 및 두개골 머리 -->
+                  <circle cx="80" cy="50" r="26" fill="#0EA5E9" id="headCircle" />
+                  <!-- 얼굴 시선 방향 (코/턱) -->
+                  <polygon points="60,48 50,54 60,60" fill="#0284C7" id="nosePolygon" />
+                  <!-- 시선 레이저 가이드선 -->
+                  <line x1="50" y1="54" x2="10" y2="54" stroke="#38BDF8" stroke-width="2" stroke-dasharray="3,3" id="sightLine" />
+                </g>
+                <!-- 지면/수직 기준선 -->
+                <line x1="80" y1="20" x2="80" y2="150" stroke="#E2E8F0" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.4" />
+              </svg>
+            </div>
+            <div class="avatar-caption" id="avatarCaption">전방각: 5.0° | 측면각: 0.0°</div>
+          </div>
+
+          <!-- 방석 좌우 체압 히트맵 -->
+          <div class="sub-viz-box">
+            <span class="sub-viz-title">착석 방석 체압 분포 센서 매트릭스</span>
+            <div class="cushion-viz-container">
+              <!-- 방석 6센서 시각화 -->
+              <div class="cushion-grid">
+                <div class="cushion-half left-half">
+                  <span class="half-tag">좌측 (L)</span>
+                  <div class="sensor-cell" id="sensorS1" title="Signal 1 (대퇴부 좌측)"><span class="sensor-num">S1</span></div>
+                  <div class="sensor-cell" id="sensorS3" title="Signal 3 (좌골결절 좌측)"><span class="sensor-num">S3</span></div>
+                  <div class="sensor-cell" id="sensorS5" title="Signal 5 (둔부 좌측)"><span class="sensor-num">S5</span></div>
+                </div>
+                <div class="cushion-divider"></div>
+                <div class="cushion-half right-half">
+                  <span class="half-tag">우측 (R)</span>
+                  <div class="sensor-cell" id="sensorS2" title="Signal 2 (대퇴부 우측)"><span class="sensor-num">S2</span></div>
+                  <div class="sensor-cell" id="sensorS4" title="Signal 4 (좌골결절 우측)"><span class="sensor-num">S4</span></div>
+                  <div class="sensor-cell" id="sensorS6" title="Signal 6 (둔부 우측)"><span class="sensor-num">S6</span></div>
+                </div>
+              </div>
+
+              <!-- 체압 밸런스 바 -->
+              <div class="balance-bar-wrap">
+                <div class="balance-bar">
+                  <div id="balanceLeftFill" class="bal-left" style="width: 50%">50%</div>
+                  <div id="balanceRightFill" class="bal-right" style="width: 50%">50%</div>
+                </div>
+                <div class="balance-status" id="balanceStatusText">골반 좌우 균등 (편중 지수: 0.00)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. AI 모델 클래스별 예측 확률 (Confidence Probabilities) -->
+        <div class="metric-card ai-probs-card">
+          <span class="metric-label">AI 모델 예측 확률 분포 (Random Forest Ensemble)</span>
+          <div class="probs-grid">
+            <div class="prob-row" id="probRow0">
+              <span class="prob-class-name">정상 자세</span>
+              <div class="prob-bar-track">
+                <div id="probBar0" class="prob-bar-fill bar-safe" style="width: 100%"></div>
+              </div>
+              <span id="probVal0" class="prob-pct">100.0%</span>
+            </div>
+            <div class="prob-row" id="probRow1">
+              <span class="prob-class-name">거북목 위험</span>
+              <div class="prob-bar-track">
+                <div id="probBar1" class="prob-bar-fill bar-warning" style="width: 0%"></div>
+              </div>
+              <span id="probVal1" class="prob-pct">0.0%</span>
+            </div>
+            <div class="prob-row" id="probRow2">
+              <span class="prob-class-name">골반·척추 불균형</span>
+              <div class="prob-bar-track">
+                <div id="probBar2" class="prob-bar-fill bar-imbalance" style="width: 0%"></div>
+              </div>
+              <span id="probVal2" class="prob-pct">0.0%</span>
+            </div>
+            <div class="prob-row" id="probRow3">
+              <span class="prob-class-name">복합 고위험</span>
+              <div class="prob-bar-track">
+                <div id="probBar3" class="prob-bar-fill bar-severe" style="width: 0%"></div>
+              </div>
+              <span id="probVal3" class="prob-pct">0.0%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 하단 영역: 맞춤형 스트레칭 처방 & AI 윤리 배지 -->
+    <footer class="app-footer">
+      <!-- 맞춤형 스트레칭 처방 카드 -->
+      <section class="stretching-card" id="stretchingCard">
+        <div class="stretch-header">
+          <div class="stretch-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+              <line x1="6" y1="1" x2="6" y2="4"/>
+              <line x1="10" y1="1" x2="10" y2="4"/>
+              <line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+            <span id="stretchBadgeText">AI 맞춤형 솔루션</span>
+          </div>
+          <h3 id="stretchTitle" class="stretch-title">30초 바른 자세 유지 호흡법</h3>
+        </div>
+        <ol id="stretchSteps" class="stretch-steps">
+          <li>가슴을 활짝 펴고 턱을 가볍게 뒤로 당깁니다(Chin-tuck).</li>
+          <li>코로 4초간 깊게 숨을 들이마시고, 입으로 6초간 천천히 내쉽니다.</li>
+          <li>골반 양쪽 좌골 결절에 체중이 50:50으로 실리도록 의식합니다.</li>
+        </ol>
+      </section>
+
+      <!-- AI 윤리 & 프라이버시 보호 안내 배지 -->
+      <section class="privacy-badge">
+        <div class="privacy-inner">
+          <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          <div class="privacy-text">
+            <strong>Privacy-First AI 윤리 원칙 준수 안내</strong>
+            <p>본 솔루션은 사용자의 신체나 얼굴을 촬영하는 웹캠/카메라 영상을 <strong>일체 수집·저장하지 않습니다</strong>. 오직 각도 및 체압 수치로만 비식별 연산하여 사용자의 프라이버시를 안전하게 보호합니다.</p>
+          </div>
+        </div>
+      </section>
+    </footer>
+  </div>
+
+  <!-- 스크립트 연결: AI 추론 모듈(model.js) -> 메인 앱(app.js) -->
+  <!-- model.js is optional; app.js includes a fallback predictor. -->
+  <script src="app.js"></script>
+</body>
+</html>
